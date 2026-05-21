@@ -148,6 +148,17 @@ pub const Index = struct {
         if (self.root) |r| iterNode(@TypeOf(ctx), r, ctx, visit);
     }
 
+    /// Walk the trie *structure* depth-first for visualization: `visit`
+    /// receives each node's tree depth, the proximity order at which it
+    /// hangs off its parent (`null` for the root), and its key/value.
+    pub fn walkStructure(
+        self: *const Index,
+        ctx: anytype,
+        comptime visit: fn (@TypeOf(ctx), depth: usize, po: ?usize, key: []const u8, value: []const u8) void,
+    ) void {
+        if (self.root) |r| walkNode(@TypeOf(ctx), r, 0, null, ctx, visit);
+    }
+
     /// Persist the whole trie to `store` in **canonical** form, returning
     /// the root chunk address — the handle you reload from.
     /// `error.EmptyIndex` if empty.
@@ -327,6 +338,19 @@ fn iterNode(
     visit(ctx, node.entry.key, node.entry.value);
     var f = node.forks;
     while (f) |fork| : (f = fork.next) iterNode(Ctx, fork.node, ctx, visit);
+}
+
+fn walkNode(
+    comptime Ctx: type,
+    node: *const Node,
+    depth: usize,
+    po: ?usize,
+    ctx: Ctx,
+    comptime visit: fn (Ctx, usize, ?usize, []const u8, []const u8) void,
+) void {
+    visit(ctx, depth, po, node.entry.key, node.entry.value);
+    var f = node.forks;
+    while (f) |fork| : (f = fork.next) walkNode(Ctx, fork.node, depth + 1, fork.po, ctx, visit);
 }
 
 // --------------------------------------------------------------------
@@ -693,4 +717,25 @@ test "canonical save: insertion order does not change the root" {
     defer dst.deinit();
     try testing.expectEqual(@as(usize, keys.len), dst.count());
     for (keys) |k| try testing.expectEqualStrings("v", dst.get(k).?);
+}
+
+const StructCollector = struct {
+    nodes: usize = 0,
+    root_ok: bool = false,
+    fn visit(self: *StructCollector, depth: usize, po: ?usize, key: []const u8, value: []const u8) void {
+        _ = key;
+        _ = value;
+        self.nodes += 1;
+        if (depth == 0 and po == null) self.root_ok = true;
+    }
+};
+
+test "walkStructure visits every node; root is depth 0 with null po" {
+    var idx = Index.init(testing.allocator, 256);
+    defer idx.deinit();
+    for ([_][]const u8{ "a", "b", "c", "d", "e" }) |k| try idx.put(k, "v");
+    var sc = StructCollector{};
+    idx.walkStructure(&sc, StructCollector.visit);
+    try testing.expectEqual(idx.count(), sc.nodes);
+    try testing.expect(sc.root_ok);
 }

@@ -210,22 +210,15 @@ fn runDemo(allocator: std.mem.Allocator, out: *std.Io.Writer) !void {
     );
 }
 
-pub fn main() void {
-    const allocator = std.heap.page_allocator;
+pub fn main(init: std.process.Init) void {
+    const allocator = init.gpa;
+    const io = init.io;
 
-    const raw = std.process.argsAlloc(allocator) catch {
-        std.process.exit(1);
-    };
-    defer std.process.argsFree(allocator, raw);
-
-    // Coerce [][:0]u8 → [][]const u8 for parsing.
-    const argv = allocator.alloc([]const u8, raw.len) catch std.process.exit(1);
+    // Build argv ([]const []const u8) from the runtime's arg vector.
+    const vec = init.minimal.args.vector;
+    const argv = allocator.alloc([]const u8, vec.len) catch std.process.exit(1);
     defer allocator.free(argv);
-    for (raw, 0..) |a, i| argv[i] = a;
-
-    var threaded = std.Io.Threaded.init(allocator, .{});
-    defer threaded.deinit();
-    const io = threaded.io();
+    for (vec, 0..) |a, i| argv[i] = std.mem.sliceTo(a, 0);
 
     var buf: [4096]u8 = undefined;
     var fw = std.Io.File.stdout().writer(io, &buf);

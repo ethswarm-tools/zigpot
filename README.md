@@ -29,7 +29,9 @@ bounded by key-bit length.
   `--dir` store or a `--bee` node; the printed root chunk address is the
   database handle you thread back with `--root`. `demo` runs in-memory.
 
-24 tests, leak-checked, `zig fmt` clean (`zig build test`).
+26 tests, leak-checked, `zig fmt` clean (`zig build test`). Built for
+**Zig 0.16**. Canonical save (same key/value set → same root) and a
+`walkStructure` introspection API (used by zigpot-tui) are included.
 
 ## CLI
 

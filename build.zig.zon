@@ -1,6 +1,6 @@
 .{
     .name = .zigpot,
-    .version = "0.1.0",
+    .version = "0.2.0",
     .minimum_zig_version = "0.16.0",
     .fingerprint = 0xc854ff9f8428a693,
     .paths = .{
