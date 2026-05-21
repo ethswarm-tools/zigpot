@@ -23,8 +23,9 @@ bounded by key-bit length.
   through a pluggable `Store`. `MemStore` (in-memory, content-addressed,
   deduping) and `BeeStore` (`POST`/`GET /chunks` with the postage-batch
   header) ship today. The root chunk address is the database handle.
-  *(Live round-trip against a node is pending a running Bee + a postage
-  batch; verified offline via MemStore + the addressing vector.)*
+  *(Verified live against a Bee node — Sepolia testnet, Bee 2.7.2: keys
+  uploaded with a postage stamp via `POST /chunks` and read back via
+  `GET /chunks`.)*
 - **Phase 3 — CLI: done.** `put` / `get` / `del` / `list` over a local
   `--dir` store or a `--bee` node; the printed root chunk address is the
   database handle you thread back with `--root`. `demo` runs in-memory.
